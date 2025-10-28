@@ -55,6 +55,10 @@ controller.move_sprite(playerChar)
 taco = sprites.create(assets.image("taco"), SpriteKind.food)
 taco.set_position(10, 100)
 
+
+
+
+
 ### Skattekiste ###
 # Oppretter sprite for en skattekiste og setter dens posisjon.
 treasure = sprites.create(assets.image("chestClosed"), SpriteKind.food)
@@ -62,13 +66,14 @@ treasure.set_position(200, 150)
 # Angir at kisten ikke er åpnet enda, slik at vi senere unngå at gull gis mer enn en gang til spilleren.
 treasureNotOpened = True 
 
+
 ### Butikk ###
 # Oppretter sprite for en butikk og setter dens posisjon.
 shop = sprites.create(assets.image("house"), SpriteKind.food)
 shop.set_position(128,20)
 
 
-utgang = sprites.create(assets.image("Forsøk"), SpriteKind.food)
+
 
 ### Musikk ###
 # Starter bakgrunnsmusikk som er et lydspor lagret i Assets.
@@ -85,13 +90,29 @@ enterShop = False
 
 # Hjelpefunksjon som lar oss pause spillet frem til spilleren har utført et valg.
 # Manglet implementasjon i Python for MakeCode Arcade.
-def onPauseUntil():
+def onPauseUntilEnter():
     global enterShop 
-    enterShop = game.ask("Enter shop?")
+    enterShop = game.ask("Enter?")
     return True
+
+def onPauseUntilExit():
+    global enterShop
+    enterShop = game.ask("Exit?")
+    return True
+
 
 # Spilløkken som sørger for interaktivitet i spillet.
 def on_update():
+
+
+    def butikk_level():
+       
+        tiles.set_current_tilemap(tilemap("shopInterior")) # Endrer tilemap
+        # Fjerner alle sprites av type food (som vi her har brukt som en generell kategori)
+        sprites.destroy_all_sprites_of_kind(SpriteKind.food)
+        playerChar.set_position(120,160) # Oppdaterer spillerens posisjon
+
+
 
     # Taco-spriten blir "spist" dersom spillerkarakteren sin sprite overlapper den.
     # Dette gjøres ved å spille av et lydklipp og sette resterende livstid for sprite til 0.
@@ -104,6 +125,7 @@ def on_update():
     # variabler med samme navn når vi endrer verdi på de.
     global treasureNotOpened
     global gold
+    global utgang
 
     # En skattekiste blir åpnet dersom spillerens sprite overlapper og kisten ikke har vært åpnet før.
     # Ved flere enn en kiste på kartet bør 
@@ -115,28 +137,44 @@ def on_update():
         music.play(music.create_song(assets.song("upgrade")), music.PlaybackMode.IN_BACKGROUND)
         # Spilleren får en beskjed i en dialogboks om at de har fått mer gull.
         game.show_long_text("You got " + str(100) + " gold!", DialogLayout.BOTTOM)
+        
 
     # Dersom spillerens sprite overlapper med butikken vil de kunne gå inn i den.
     if(playerChar.overlaps_with(shop)):
-        pause_until(onPauseUntil) # Hjelpefunksjon som holder spillet pauset til brukeren avgir svar.
+        pause_until(onPauseUntilEnter) # Hjelpefunksjon som holder spillet pauset til brukeren avgir svar.
         if (enterShop):
-            tiles.set_current_tilemap(tilemap("shopInterior")) # Endrer tilemap
-            # Fjerner alle sprites av type food (som vi her har brukt som en generell kategori)
-            sprites.destroy_all_sprites_of_kind(SpriteKind.food)
-            playerChar.set_position(120,160) # Oppdaterer spillerens posisjon
+            butikk_level()
+            utgang = sprites.create(assets.image("PlaceHolder_Ingenting"), SpriteKind.food)
+            utgang.set_position(120,183)
+
+
+
+               
         else:
             playerChar.set_position(128, 70) # Flytter karakteren til en posisjon som ikke overlapper med butikken.
 
-    # Oppdaterer karakterens animasjon
+
+# Oppdaterer karakterens animasjon
     update_character_animation()
+
+
+if(playerChar.overlaps_with(utgang)):
+        pause_until(onPauseUntilEnter)
+        if(enterShop):
+            tiles.set_current_tilemap(tilemap("Feild_Level"))
+            sprites.destroy_all_sprites_of_kind(SpriteKind.food)
+            playerChar.set_position(128, 70)
+        else:
+            playerChar.set_position(120,178)
+            
+
+                
 
 def venstre_slipp():
     animation.run_image_animation(playerChar,
         assets.animation("Hero_StandStill_Left"),
-        200,
-        True)
-    current_animation = "idle_left"
-    playerChar.vx = 0
+        0)
+    
 
 
 
@@ -153,19 +191,10 @@ def update_character_animation():
             assets.animation("heroWalkLeft"), 200, True)
             current_animation = "walk_left"
         
-          ##  controller.left.on_event(ControllerButtonEvent.RELEASED, animation.run_image_animation(playerChar,
-              #      assets.animation("Hero_StandStill_Left"), 200, True))
-
-
+        
             controller.left.on_event(ControllerButtonEvent.RELEASED, venstre_slipp)
 
-              
 
-
-            
-        
-
- 
     if(controller.right.is_pressed()):
          if(current_animation != "walk_right"): # Unngår å overskrive pågående animasjon
               # Starter animasjon på spillerens karakter, med gitt animasjon og hastighet, og setter den til å loope.
